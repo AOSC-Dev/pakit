@@ -1,0 +1,40 @@
+#!/bin/bash
+
+_help_message() {
+	printf "\
+Generates a list of affected packages.
+
+Usage: genaffect [PACKAGES]...
+
+Leave packages as blank to calculate all changed packages in current branch.
+"
+}
+
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+	_help_message
+	exit 0
+fi
+
+packages=("$@")
+if [[ "$#" == 0 ]]; then
+	readarray -d $'\n' -t packages < <(
+		while read -r dir; do
+			if [[ "$dir" =~ groups/.* ]]; then
+				continue
+			fi
+			cut -d'/' -f2 <<<"$dir"
+		done < <(git diff origin/stable..HEAD --name-only | cut -d'/' -f1,2 | sort | uniq)
+	)
+fi
+
+echo "Packages: ${packages[*]}"
+
+affects=()
+for pkg in "${packages[@]}"; do
+	version="$(oma show "$pkg" --json | jq -r '.version')"
+	affects=("${affects[@]}" "$pkg (\`$version\`)")
+done
+
+IFS=','
+# shellcheck disable=SC2001
+sed -e 's/,/, /g' <<<"${affects[*]}"
