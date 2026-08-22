@@ -87,32 +87,30 @@ def search_package_path(package_name: str) -> tuple[str, str]:
     return None, None
 
 
+# Resolve value from script
+def resolve_from_script(script_path: str, key: str) -> str:
+    return subprocess.check_output(
+        ["bash", "-c", f"source {script_path} && echo ${{{key}}}"],
+        encoding="utf-8",
+        stderr=subprocess.STDOUT,
+    ).strip()
+
+
 # Get version of package
 def get_package_version(package_path: str, defines_path: str) -> str:
-    ver = None
-    rel = None
-    pkgepoch = None
-
     spec_path = os.path.join(package_path, "spec")
-    with open(spec_path, "r") as f:
-        for i in f:
-            if i.startswith("VER="):
-                ver = i.replace("VER=", "").strip()
-            if i.startswith("REL="):
-                rel = i.replace("REL=", "").strip()
-
-    with open(defines_path, "r") as f:
-        for i in f:
-            if i.startswith("PKGEPOCH="):
-                pkgepoch = i.replace("PKGEPOCH=", "").strip()
+    ver = resolve_from_script(spec_path, "VER")
+    rel = resolve_from_script(spec_path, "REL")
+    epoch = resolve_from_script(defines_path, "EPOCH") or \
+            resolve_from_script(defines_path, "PKGEPOCH")
 
     res = None
-    if ver is not None:
+    if ver != "":
         res = ver
-        if rel is not None:
+        if rel != "":
             res += "-" + rel
-        if pkgepoch is not None:
-            res = pkgepoch + ":" + res
+        if epoch != "":
+            res = epoch + ":" + res
 
     return res
 
