@@ -101,7 +101,7 @@ def get_package_version(package_path: str, defines_path: str) -> str:
     spec_path = os.path.join(package_path, "spec")
     ver = resolve_from_script(spec_path, "VER")
     rel = resolve_from_script(spec_path, "REL")
-    epoch = resolve_from_script(defines_path, "EPOCH") or \
+    epoch = resolve_from_script(spec_path, "EPOCH") or \
             resolve_from_script(defines_path, "PKGEPOCH")
 
     res = None
